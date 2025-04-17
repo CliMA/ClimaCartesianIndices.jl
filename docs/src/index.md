@@ -43,20 +43,6 @@ function perf_linear_index_kernel!(X, Y, ::Val{nitems}) where {nitems}
     end
     return nothing
 end;
-function perf_cart_index_fast!(X, Y)
-    x1 = X.x1;
-    nitems = length(parent(x1));
-    max_threads = 256; # can be higher if conditions permit
-    nthreads = min(max_threads, nitems);
-    nblocks = cld(nitems, nthreads);
-    CI = FastCartesianIndices(map(Int32, size(x1)));                  # using FastCartesianIndices here
-    CUDA.@cuda threads=nthreads blocks=nblocks name="cartesian" perf_cart_index_kernel!(
-        X,
-        Y,
-        Val(nitems),
-        Val(CI),
-    )
-end;
 function perf_cart_index!(X, Y, CI)
     x1 = X.x1;
     nitems = length(parent(x1));
