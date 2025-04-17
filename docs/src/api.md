@@ -1,5 +1,5 @@
 # API
 
 ```@docs
-FastCartesianIndices
+ClimaCartesianIndices.FastCartesianIndices
 ```
