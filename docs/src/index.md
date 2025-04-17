@@ -5,6 +5,12 @@ This package implements a type called `FastCartesianIndices`, which is a drop-in
 linear indexes to cartesian indexes. This is especially useful on the gpu,
 which can have a nearly 2x performance impact.
 
+!!! warn
+
+	`FastCartesianIndices` internally uses `Int32` and is therefore only
+	valid when the product of the input indices are less than or equal to
+	`typemax(Int32)` (2147483647)
+
 ## Example
 
 ```julia
@@ -43,8 +49,7 @@ function perf_cart_index_fast!(X, Y)
     max_threads = 256; # can be higher if conditions permit
     nthreads = min(max_threads, nitems);
     nblocks = cld(nitems, nthreads);
-    # CI = CartesianIndices(size(x1))
-    CI = FastCartesianIndices(map(Int32, size(x1)));
+    CI = FastCartesianIndices(map(Int32, size(x1)));                  # using FastCartesianIndices here
     CUDA.@cuda threads=nthreads blocks=nblocks name="cartesian" perf_cart_index_kernel!(
         X,
         Y,
@@ -58,7 +63,6 @@ function perf_cart_index!(X, Y)
     max_threads = 256; # can be higher if conditions permit
     nthreads = min(max_threads, nitems);
     nblocks = cld(nitems, nthreads);
-    # CI = CartesianIndices(size(x1))
     CI = CartesianIndices(size(x1));
     CUDA.@cuda threads=nthreads blocks=nblocks name="cartesian" perf_cart_index_kernel!(
         X,
@@ -113,5 +117,37 @@ CUDA.@profile begin
     perf_cart_index_fast!(X, Y)
     perf_cart_index_fast!(X, Y)
 end
+```
 
+## Results (NVIDIA A100)
+
+For `perf_linear_index!`:
+```julia
+Device-side activity: GPU was busy for 1.5 ms (0.02% of the trace)
+┌──────────┬────────────┬───────┬──────────────────────────────────────┬────────┐
+│ Time (%) │ Total time │ Calls │ Time distribution                    │ Name   │
+├──────────┼────────────┼───────┼──────────────────────────────────────┼────────┤
+│    0.02% │     1.5 ms │     4 │ 375.27 µs ± 0.34   (375.03 ‥ 375.75) │ linear │
+└──────────┴────────────┴───────┴──────────────────────────────────────┴────────┘
+```
+
+For `perf_cart_index!`
+```julia
+Device-side activity: GPU was busy for 6.94 ms (1.58% of the trace)
+┌──────────┬────────────┬───────┬────────────────────────────────────┬───────────┐
+│ Time (%) │ Total time │ Calls │ Time distribution                  │ Name      │
+├──────────┼────────────┼───────┼────────────────────────────────────┼───────────┤
+│    1.58% │    6.94 ms │     4 │   1.74 ms ± 2.42   (  0.53 ‥ 5.36) │ cartesian │
+└──────────┴────────────┴───────┴────────────────────────────────────┴───────────┘
+```
+
+For `perf_cart_index_fast!`
+
+```julia
+Device-side activity: GPU was busy for 1.55 ms (0.38% of the trace)
+┌──────────┬────────────┬───────┬──────────────────────────────────────┬───────────┐
+│ Time (%) │ Total time │ Calls │ Time distribution                    │ Name      │
+├──────────┼────────────┼───────┼──────────────────────────────────────┼───────────┤
+│    0.38% │    1.55 ms │     4 │ 387.97 µs ± 6.49   (379.32 ‥ 393.63) │ cartesian │
+└──────────┴────────────┴───────┴──────────────────────────────────────┴───────────┘
 ```

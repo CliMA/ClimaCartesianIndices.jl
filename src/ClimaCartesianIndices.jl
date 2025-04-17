@@ -9,6 +9,12 @@ module ClimaCartesianIndices
 
 Unlike `CartesianIndices`, `FastCartesianIndices` avoids integer
 division by using `Base.MultiplicativeInverses.SignedMultiplicativeInverse`.
+
+!!! warn
+
+	`FastCartesianIndices` internally uses `Int32` and is therefore only
+	valid when the product of the input indices are less than or equal to
+	`typemax(Int32)` (2147483647)
 """
 struct FastCartesianIndices{N, R, MI} <: AbstractArray{CartesianIndex{N}, N}
     mi::MI
