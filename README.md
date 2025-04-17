@@ -4,3 +4,5 @@ This package implements a type called `FastCartesianIndices`, which is a drop-in
 `SignedMultiplicativeInverse` to avoid integer division when converting
 linear indexes to cartesian indexes. This is especially useful on the gpu,
 which can have a nearly 2x performance impact.
+
+See our [documentation](https://CliMA.github.io/ClimaCartesianIndices.jl/dev/) for more information.
