@@ -22,16 +22,21 @@ end
 FastCartesianIndices(::Tuple{}) = FastCartesianIndices{0, ()}(())
 function FastCartesianIndices(inds::NTuple)
     N = length(inds)
-    mi = if eltype(inds) <: Integer
-        map(SMI, inds)
-    elseif eltype(inds) <: UnitRange
-        map(i -> SMI(i.stop), inds)
-    elseif eltype(inds) <: Base.OneTo
-        map(i -> SMI(i.stop), inds)
+    size_inds = if eltype(inds) <: Integer
+        inds
+    elseif eltype(inds) <: Union{UnitRange, Base.OneTo}
+        map(i -> i.stop, inds)
     end
-    return FastCartesianIndices{N, inds, typeof(mi)}(mi)
+    mi = map(SMI, size_inds)
+    @assert size_inds isa Tuple{Vararg{T}} where {T <: Integer} # need this for getindex
+    return FastCartesianIndices{N, size_inds, typeof(mi)}(mi)
 end
-FastCartesianIndices(x) = FastCartesianIndices(size(x))
+FastCartesianIndices(x::AbstractArray) = FastCartesianIndices(axes(x))
+
+Base.:(==)(a::FastCartesianIndices{N}, b::FastCartesianIndices{N}) where {N} =
+    all(map(==, a.mi, b.mi))
+Base.:(==)(a::FastCartesianIndices, b::FastCartesianIndices) = false
+
 Base.size(iter::FastCartesianIndices{N, R}) where {N, R} = R
 Base.length(iter::FastCartesianIndices) = prod(size(iter))
 Base.axes(::FastCartesianIndices{N, R}) where {N, R} =

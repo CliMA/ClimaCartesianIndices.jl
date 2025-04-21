@@ -43,7 +43,7 @@ function perf_linear_index_kernel!(X, Y, ::Val{nitems}) where {nitems}
     end
     return nothing
 end;
-function perf_cart_index!(X, Y, CI)
+function perf_cart_index!(X, Y, cart_inds)
     x1 = X.x1;
     nitems = length(parent(x1));
     max_threads = 256; # can be higher if conditions permit
@@ -53,19 +53,19 @@ function perf_cart_index!(X, Y, CI)
         X,
         Y,
         Val(nitems),
-        CI,
+        cart_inds,
     )
 end;
 unval(::Val{CI}) where {CI} = CI
 unval(CI) = CI
-function perf_cart_index_kernel!(X, Y, ::Val{nitems}, valci) where {nitems}
+function perf_cart_index_kernel!(X, Y, ::Val{nitems}, cart_inds) where {nitems}
     (; x1, x2, x3, x4) = X
     (; y1) = Y
     @inbounds begin
         _i = CUDA.threadIdx().x +
           (CUDA.blockIdx().x - Int32(1)) * CUDA.blockDim().x
-        if _i ≤ nitems
-            CI = unval(valci)
+        if _i ≤ nitems && _i ≤ length(unval(cart_inds))
+            CI = unval(cart_inds)
             i = CI[_i]
             # more flops makes them much closer
             # y1[i] = x1[i] + x2[i] + x3[i] + x4[i]
