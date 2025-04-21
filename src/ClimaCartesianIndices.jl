@@ -24,11 +24,14 @@ function FastCartesianIndices(inds::NTuple)
     N = length(inds)
     mi = if eltype(inds) <: Integer
         map(SMI, inds)
+    elseif eltype(inds) <: UnitRange
+        map(i -> SMI(i.stop), inds)
     elseif eltype(inds) <: Base.OneTo
         map(i -> SMI(i.stop), inds)
     end
     return FastCartesianIndices{N, inds, typeof(mi)}(mi)
 end
+FastCartesianIndices(x) = FastCartesianIndices(size(x))
 Base.size(iter::FastCartesianIndices{N, R}) where {N, R} = R
 Base.length(iter::FastCartesianIndices) = prod(size(iter))
 Base.axes(::FastCartesianIndices{N, R}) where {N, R} =
