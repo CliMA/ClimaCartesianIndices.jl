@@ -30,10 +30,13 @@ end
 @testset "Interface" begin
     sci = FCI(map(Int32, (4, 4, 1, 63, 5400)))
     @test length(sci) == prod((4, 4, 1, 63, 5400))
+    @test size(sci) == (4, 4, 1, 63, 5400)
     arr = rand(3)
+    @test size(FCI((1:3, 1:3))) == (3, 3)
     @test FCI(arr) == FCI(size(arr))
     @test FCI((1:3, 1:4)).mi == FCI((3, 4)).mi
     @test FCI((Base.OneTo(3), Base.OneTo(4))).mi == FCI((3, 4)).mi
+    @test FCI((Base.OneTo(3), Base.OneTo(4))) == FCI((3, 4))
 end
 
 @testset "Aqua" begin

@@ -1,7 +1,7 @@
 name = "ClimaCartesianIndices"
 uuid = "afc79dc6-9922-4b50-ae92-da7b5116c2c8"
 authors = ["CliMA Contributors <clima-software@caltech.edu>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
