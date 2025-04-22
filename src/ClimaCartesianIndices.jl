@@ -3,7 +3,7 @@ module ClimaCartesianIndices
 @inline SMI(x) = Base.MultiplicativeInverses.SignedMultiplicativeInverse(x)
 
 """
-	FastCartesianIndices
+    FastCartesianIndices
 
 `FastCartesianIndices` is a drop-in replacement for `CartesianIndices`.
 
@@ -12,11 +12,11 @@ division by using `Base.MultiplicativeInverses.SignedMultiplicativeInverse`.
 
 !!! warn
 
-	`FastCartesianIndices` internally uses `Int32` and is therefore only
-	valid when the product of the input indices are less than or equal to
-	`typemax(Int32)` (2147483647)
+    `FastCartesianIndices` internally uses `Int32` and is therefore only
+    valid when the product of the input indices are less than or equal to
+    `typemax(Int32)` (2147483647)
 """
-struct FastCartesianIndices{N, R, MI} <: AbstractArray{CartesianIndex{N}, N}
+struct FastCartesianIndices{N, MI} <: AbstractArray{CartesianIndex{N}, N}
     mi::MI
 end
 FastCartesianIndices(::Tuple{}) = FastCartesianIndices{0, ()}(())
@@ -29,7 +29,7 @@ function FastCartesianIndices(inds::NTuple)
     end
     mi = map(SMI, size_inds)
     @assert size_inds isa Tuple{Vararg{T}} where {T <: Integer} # need this for getindex
-    return FastCartesianIndices{N, size_inds, typeof(mi)}(mi)
+    return FastCartesianIndices{N, typeof(mi)}(mi)
 end
 FastCartesianIndices(x::AbstractArray) = FastCartesianIndices(axes(x))
 
@@ -37,26 +37,23 @@ Base.:(==)(a::FastCartesianIndices{N}, b::FastCartesianIndices{N}) where {N} =
     all(map(==, a.mi, b.mi))
 Base.:(==)(a::FastCartesianIndices, b::FastCartesianIndices) = false
 
-Base.size(iter::FastCartesianIndices{N, R}) where {N, R} = R
+Base.size(iter::FastCartesianIndices) = map(x -> x.divisor, iter.mi)
 Base.length(iter::FastCartesianIndices) = prod(size(iter))
-Base.axes(::FastCartesianIndices{N, R}) where {N, R} =
-    map(x -> Base.OneTo(x), R)
-function __tail(sci::FastCartesianIndices{N, R}) where {N, R}
-    mi_tail = Base.tail(sci.mi)
-    FastCartesianIndices{N - 1, Base.tail(R), typeof(inds_tail)}(mi_tail)
-end
+Base.axes(iter::FastCartesianIndices) = map(x -> Base.OneTo(x.divisor), iter.mi)
+__tail(iter::FastCartesianIndices{N}) where {N} =
+    FastCartesianIndices{N - 1, typeof(inds_tail)}(Base.tail(iter.mi))
 
-Base.@propagate_inbounds Base.getindex(
-    iter::FastCartesianIndices{0, R},
-) where {R} = CartesianIndex()
+Base.@propagate_inbounds Base.getindex(iter::FastCartesianIndices{0}) =
+    CartesianIndex()
 @inline function Base.getindex(
-    iter::FastCartesianIndices{N, R},
+    iter::FastCartesianIndices{N},
     I::Vararg{<:Integer, N},
-) where {N, R}  # exit point
+) where {N}  # exit point
     # Eagerly do boundscheck before calculating each item of the CartesianIndex so that
     # we can pass `@inbounds` hint to inside the map and generates more efficient SIMD codes (#42115)
     @boundscheck Base.checkbounds_indices(Bool, axes(iter), I)
-    index = map(R, I) do r, i
+    divisors = map(x -> x.divisor, iter.mi)
+    index = map(divisors, I) do r, i
         @inbounds getindex(1:r, i)
     end
     CartesianIndex(index)
@@ -73,8 +70,8 @@ _to_indices1(A::FastCartesianIndices, inds, I1) = (I1,)
 _to_indices1(
     A::FastCartesianIndices,
     inds,
-    I1::FastCartesianIndices{N, R},
-) where {N, R} = map(y -> to_index(A, 1:y), R)
+    I1::FastCartesianIndices{N},
+) where {N} = map(y -> to_index(A, 1:(y.divisor)), A.mi)
 _cutdim(inds, I1) = safe_tail(inds)
 safe_tail(t::Tuple) = Base.tail(t)
 safe_tail(t::Tuple{}) = ()
@@ -125,11 +122,11 @@ _ind2sub(inds::FastCartesianIndices, ind::Integer) = (@inline;
 ) = (ind + Int32(1),)
 @inline function _ind2sub_recurse(
     t,
-    inds::FastCartesianIndices{N, R},
+    inds::FastCartesianIndices{N},
     ind,
     n,
-) where {N, R}
-    r1 = R[n]
+) where {N}
+    r1 = inds.mi[n].divisor
     (; mi) = inds
     _mi = mi[n]
     indnext, l = div(Signed(Int32(ind)), _mi), r1 # on julia-side avoids div(,Int)
