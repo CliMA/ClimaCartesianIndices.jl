@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · ClimaCartesianIndices.jl</title><meta name="title" content="Home · ClimaCartesianIndices.jl"/><meta property="og:title" content="Home · ClimaCartesianIndices.jl"/><meta property="twitter:title" content="Home · ClimaCartesianIndices.jl"/><meta name="description" content="Documentation for ClimaCartesianIndices.jl."/><meta property="og:description" content="Documentation for ClimaCartesianIndices.jl."/><meta property="twitter:description" content="Documentation for ClimaCartesianIndices.jl."/><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="search_index.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>ClimaCartesianIndices.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a><ul class="internal"><li><a class="tocitem" href="#Example"><span>Example</span></a></li><li><a class="tocitem" href="#Results-(NVIDIA-A100)"><span>Results (NVIDIA A100)</span></a></li></ul></li><li><a class="tocitem" href="api/">API</a></li><li><a class="tocitem" href="references/">References</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/CliMA/ClimaCartesianIndices.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/CliMA/ClimaCartesianIndices.jl/blob/main/docs/src/index.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="ClimaCartesianIndices.jl"><a class="docs-heading-anchor" href="#ClimaCartesianIndices.jl">ClimaCartesianIndices.jl</a><a id="ClimaCartesianIndices.jl-1"></a><a class="docs-heading-anchor-permalink" href="#ClimaCartesianIndices.jl" title="Permalink"></a></h1><p>This package implements a type called <code>FastCartesianIndices</code>, which is a drop-in replacement for <code>CartesianIndices</code>. <code>FastCartesianIndices</code> uses Julia Base&#39;s <code>SignedMultiplicativeInverse</code> to avoid integer division when converting linear indexes to cartesian indexes. This is especially useful on the gpu, which can have a nearly 2x performance impact.</p><div class="admonition is-category-warn"><header class="admonition-header">Warn</header><div class="admonition-body"><p><code>FastCartesianIndices</code> internally uses <code>Int32</code> and is therefore only valid when the product of the input indices are less than or equal to <code>typemax(Int32)</code> (2147483647)</p></div></div><h2 id="Example"><a class="docs-heading-anchor" href="#Example">Example</a><a id="Example-1"></a><a class="docs-heading-anchor-permalink" href="#Example" title="Permalink"></a></h2><pre><code class="language-julia hljs">using ClimaCartesianIndices: FastCartesianIndices
+using CUDA;
+
+function perf_linear_index!(X, Y)
+    x1 = X.x1;
+    nitems = length(parent(x1));
+    max_threads = 256; # can be higher if conditions permit
+    nthreads = min(max_threads, nitems);
+    nblocks = cld(nitems, nthreads);
+    CUDA.@cuda threads=nthreads blocks=nblocks name=&quot;linear&quot; perf_linear_index_kernel!(
+        X,
+        Y,
+        Val(nitems),
+    )
+end;
+function perf_linear_index_kernel!(X, Y, ::Val{nitems}) where {nitems}
+    (; x1, x2, x3, x4) = X
+    (; y1) = Y
+    @inbounds begin
+        i = CUDA.threadIdx().x +
+          (CUDA.blockIdx().x - Int32(1)) * CUDA.blockDim().x
+        if i ≤ nitems
+            # more flops makes them much closer
+            # y1[i] = x1[i] + x2[i] + x3[i] + x4[i]
+            y1[i] = x1[i]
+        end
+    end
+    return nothing
+end;
+function perf_cart_index!(X, Y, CI)
+    x1 = X.x1;
+    nitems = length(parent(x1));
+    max_threads = 256; # can be higher if conditions permit
+    nthreads = min(max_threads, nitems);
+    nblocks = cld(nitems, nthreads);
+    CUDA.@cuda threads=nthreads blocks=nblocks name=&quot;cartesian&quot; perf_cart_index_kernel!(
+        X,
+        Y,
+        Val(nitems),
+        CI,
+    )
+end;
+unval(::Val{CI}) where {CI} = CI
+unval(CI) = CI
+function perf_cart_index_kernel!(X, Y, ::Val{nitems}, valci) where {nitems}
+    (; x1, x2, x3, x4) = X
+    (; y1) = Y
+    @inbounds begin
+        _i = CUDA.threadIdx().x +
+          (CUDA.blockIdx().x - Int32(1)) * CUDA.blockDim().x
+        if _i ≤ nitems
+            CI = unval(valci)
+            i = CI[_i]
+            # more flops makes them much closer
+            # y1[i] = x1[i] + x2[i] + x3[i] + x4[i]
+            y1[i] = x1[i]
+        end
+    end
+    return nothing
+end;
+
+function get_arrays(sym, AType, FT, s, n = 4)
+    println(&quot;array_type = $AType&quot;)
+    fn = ntuple(i -&gt; Symbol(sym, i), n)
+    return (; zip(fn, ntuple(_ -&gt; AType(zeros(FT, s...)), n))...)
+end;
+using CUDA;
+array_size = (50, 5, 5, 6, 5400); # array
+X = get_arrays(:x, CUDA.CuArray, Float64, array_size);
+Y = get_arrays(:y, CUDA.CuArray, Float64, array_size);
+
+fast_ci(x) = FastCartesianIndices(map(Int32, size(x)))
+
+CUDA.@profile begin
+    perf_linear_index!(X, Y)
+    perf_linear_index!(X, Y)
+    perf_linear_index!(X, Y)
+    perf_linear_index!(X, Y)
+end
+
+CUDA.@profile begin
+    perf_cart_index!(X, Y, CartesianIndices(X.x1))
+    perf_cart_index!(X, Y, CartesianIndices(X.x1))
+    perf_cart_index!(X, Y, CartesianIndices(X.x1))
+    perf_cart_index!(X, Y, CartesianIndices(X.x1))
+end
+
+CUDA.@profile begin
+    perf_cart_index!(X, Y, Val(CartesianIndices(X.x1)))
+    perf_cart_index!(X, Y, Val(CartesianIndices(X.x1)))
+    perf_cart_index!(X, Y, Val(CartesianIndices(X.x1)))
+    perf_cart_index!(X, Y, Val(CartesianIndices(X.x1)))
+end
+
+CUDA.@profile begin
+    perf_cart_index!(X, Y, fast_ci(X.x1))
+    perf_cart_index!(X, Y, fast_ci(X.x1))
+    perf_cart_index!(X, Y, fast_ci(X.x1))
+    perf_cart_index!(X, Y, fast_ci(X.x1))
+end
+
+CUDA.@profile begin
+    perf_cart_index!(X, Y, Val(fast_ci(X.x1)))
+    perf_cart_index!(X, Y, Val(fast_ci(X.x1)))
+    perf_cart_index!(X, Y, Val(fast_ci(X.x1)))
+    perf_cart_index!(X, Y, Val(fast_ci(X.x1)))
+end</code></pre><h2 id="Results-(NVIDIA-A100)"><a class="docs-heading-anchor" href="#Results-(NVIDIA-A100)">Results (NVIDIA A100)</a><a id="Results-(NVIDIA-A100)-1"></a><a class="docs-heading-anchor-permalink" href="#Results-(NVIDIA-A100)" title="Permalink"></a></h2><p>For <code>perf_linear_index!</code>:</p><pre><code class="language-julia hljs">Device-side activity: GPU was busy for 1.5 ms (0.02% of the trace)
+┌──────────┬────────────┬───────┬──────────────────────────────────────┬────────┐
+│ Time (%) │ Total time │ Calls │ Time distribution                    │ Name   │
+├──────────┼────────────┼───────┼──────────────────────────────────────┼────────┤
+│    0.02% │     1.5 ms │     4 │ 375.27 µs ± 0.34   (375.03 ‥ 375.75) │ linear │
+└──────────┴────────────┴───────┴──────────────────────────────────────┴────────┘</code></pre><p>For <code>perf_cart_index!(X, Y, CartesianIndices(...))</code></p><pre><code class="language-julia hljs">Device-side activity: GPU was busy for 3.31 ms (0.47% of the trace)
+┌──────────┬────────────┬───────┬──────────────────────────────────────┬───────────┐
+│ Time (%) │ Total time │ Calls │ Time distribution                    │ Name      │
+├──────────┼────────────┼───────┼──────────────────────────────────────┼───────────┤
+│    0.47% │    3.31 ms │     4 │ 828.62 µs ± 0.63   (828.03 ‥ 829.46) │ cartesian │
+└──────────┴────────────┴───────┴──────────────────────────────────────┴───────────┘</code></pre><p>For <code>perf_cart_index!(X, Y, Val(CartesianIndices(...)))</code></p><pre><code class="language-julia hljs">Device-side activity: GPU was busy for 2.61 ms (1.84% of the trace)
+┌──────────┬────────────┬───────┬──────────────────────────────────────┬───────────┐
+│ Time (%) │ Total time │ Calls │ Time distribution                    │ Name      │
+├──────────┼────────────┼───────┼──────────────────────────────────────┼───────────┤
+│    1.84% │    2.61 ms │     4 │  651.9 µs ± 0.12   (651.84 ‥ 652.07) │ cartesian │
+└──────────┴────────────┴───────┴──────────────────────────────────────┴───────────┘</code></pre><p>For <code>perf_cart_index!(X, Y, fast_ci(...))</code></p><pre><code class="language-julia hljs">Device-side activity: GPU was busy for 2.08 ms (0.48% of the trace)
+┌──────────┬────────────┬───────┬──────────────────────────────────────┬───────────┐
+│ Time (%) │ Total time │ Calls │ Time distribution                    │ Name      │
+├──────────┼────────────┼───────┼──────────────────────────────────────┼───────────┤
+│    0.48% │    2.08 ms │     4 │ 519.45 µs ± 0.3    (519.04 ‥ 519.75) │ cartesian │
+└──────────┴────────────┴───────┴──────────────────────────────────────┴───────────┘</code></pre><p>For <code>perf_cart_index!(X, Y, Val(fast_ci(...)))</code></p><pre><code class="language-julia hljs">Device-side activity: GPU was busy for 1.64 ms (0.86% of the trace)
+┌──────────┬────────────┬───────┬──────────────────────────────────────┬───────────┐
+│ Time (%) │ Total time │ Calls │ Time distribution                    │ Name      │
+├──────────┼────────────┼───────┼──────────────────────────────────────┼───────────┤
+│    0.86% │    1.64 ms │     4 │ 408.77 µs ± 9.91   (397.44 ‥ 420.33) │ cartesian │
+└──────────┴────────────┴───────┴──────────────────────────────────────┴───────────┘</code></pre></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="api/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.1 on <span class="colophon-date" title="Monday 21 April 2025 18:15">Monday 21 April 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
